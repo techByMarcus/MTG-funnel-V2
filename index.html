@@ -1008,6 +1008,11 @@ src="https://www.facebook.com/tr?id=PASTE_PIXEL_ID_HERE&ev=PageView&noscript=1"/
           <span class="error-msg" id="fnameErr">Please enter your first name.</span>
         </div>
         <div class="field-group">
+          <label>Last Name *</label>
+          <input type="text" id="lname" placeholder="Your last name" autocomplete="family-name">
+          <span class="error-msg" id="lnameErr">Please enter your last name.</span>
+        </div>
+        <div class="field-group">
           <label>Phone *</label>
           <input type="tel" id="phone" placeholder="(000) 000-0000" autocomplete="tel">
           <span class="error-msg" id="phoneErr">Please enter a valid phone number.</span>
@@ -1044,7 +1049,7 @@ src="https://www.facebook.com/tr?id=PASTE_PIXEL_ID_HERE&ev=PageView&noscript=1"/
       <div class="action-btns" style="margin-top:14px">
         <a href="tel:4709435798" class="action-btn primary" onclick="trackAction('CallClick')">📞 Call Marcus Now</a>
         <a href="https://calendly.com/marcusalbright" target="_blank" class="action-btn secondary" onclick="trackAction('BookClick')">📅 Book a Consultation</a>
-        <a href="https://theloanfactory.com/apply" target="_blank" class="action-btn tertiary" onclick="trackAction('ApplyClick')">📝 Start My Application</a>
+        <a href="https://PASTE_APPLICATION_LINK_HERE" target="_blank" class="action-btn tertiary" onclick="trackAction('ApplyClick')">📝 Start My Application</a>
       </div>
       <p class="disclaimer" style="margin-top:12px">Marcus Albright · The Loan Factory · NMLS #1503465<br>Equal Housing Opportunity Lender</p>
     </div>
@@ -1087,7 +1092,7 @@ src="https://www.facebook.com/tr?id=PASTE_PIXEL_ID_HERE&ev=PageView&noscript=1"/
 // ═══════════════════════════════════════════════
 //  CONFIG
 // ═══════════════════════════════════════════════
-const ZAPIER_WEBHOOK = 'PASTE_ZAPIER_WEBHOOK_URL_HERE';
+const ZAPIER_WEBHOOK = 'https://hooks.zapier.com/hooks/catch/27273306/uv373t0/';
 
 // ═══════════════════════════════════════════════
 //  DEBUG MODE  (?debug=true)
@@ -1436,7 +1441,7 @@ let leadStartedFired = false;
 let exitLeadStartedFired = false;
 
 function attachLeadStartedListeners() {
-  ['fname', 'phone', 'email'].forEach(id => {
+  ['fname', 'lname', 'phone', 'email'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const handler = () => {
@@ -1484,28 +1489,37 @@ document.getElementById('phone').addEventListener('input', function() {
 // ═══════════════════════════════════════════════
 async function submitLead() {
   const fname   = document.getElementById('fname').value.trim();
+  const lname   = document.getElementById('lname').value.trim();
   const phone   = document.getElementById('phone').value.trim();
   const email   = document.getElementById('email').value.trim();
   const consent = document.getElementById('consent').checked;
 
   // Internal: track attempt
-  internalTrack('LeadSubmitAttempt', { fname_filled: !!fname, phone_filled: !!phone, consent });
+  internalTrack('LeadSubmitAttempt', { fname_filled: !!fname, lname_filled: !!lname, phone_filled: !!phone, consent });
 
   // Validation
   let valid = true;
   const fnameErr   = document.getElementById('fnameErr');
+  const lnameErr   = document.getElementById('lnameErr');
   const phoneErr   = document.getElementById('phoneErr');
   const consentErr = document.getElementById('consentErr');
 
   fnameErr.classList.remove('show');
+  lnameErr.classList.remove('show');
   phoneErr.classList.remove('show');
   consentErr.classList.remove('show');
   document.getElementById('fname').classList.remove('error');
+  document.getElementById('lname').classList.remove('error');
   document.getElementById('phone').classList.remove('error');
 
   if (!fname) {
     fnameErr.classList.add('show');
     document.getElementById('fname').classList.add('error');
+    valid = false;
+  }
+  if (!lname) {
+    lnameErr.classList.add('show');
+    document.getElementById('lname').classList.add('error');
     valid = false;
   }
   const phoneClean = phone.replace(/\D/g, '');
@@ -1519,7 +1533,7 @@ async function submitLead() {
     valid = false;
   }
   if (!valid) {
-    internalTrack('LeadSubmitError', { fname_missing: !fname, phone_missing: phoneClean.length < 10, consent_missing: !consent });
+    internalTrack('LeadSubmitError', { fname_missing: !fname, lname_missing: !lname, phone_missing: phoneClean.length < 10, consent_missing: !consent });
     try { gtag('event', 'LeadSubmitError'); } catch(e) {}
     return;
   }
@@ -1535,7 +1549,9 @@ async function submitLead() {
   const payload = {
     lead_type:    'full_funnel',
     session_id:   SESSION_ID,
-    name:         fname,
+    first_name:   fname,
+    last_name:    lname,
+    full_name:    `${fname} ${lname}`,
     phone:        phoneClean,
     email,
     goal:         state.goal,
